@@ -1,0 +1,1 @@
+Housekeeping release ahead of F-Droid submission. No functional changes; this release focuses on repository and packaging metadata.
