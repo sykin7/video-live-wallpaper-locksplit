@@ -90,7 +90,7 @@ object LockWallpaperManager {
         }
     }
 
-    private fun decodeScaled(
+    fun decodeScaled(
         context: Context,
         uri: Uri,
         targetWidth: Int,

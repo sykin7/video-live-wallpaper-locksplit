@@ -184,6 +184,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         selectedLockImageUri = uri
+        prefs.edit().putString(VideoWallpaperService.PREF_LOCK_IMAGE_URI, uri.toString()).apply()
         setLockControlsEnabled(true)
     }
 

@@ -1,12 +1,24 @@
 package com.scg.videowallpaper
 
+import android.app.KeyguardManager
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.SharedPreferences
+import android.content.res.Resources
+import android.graphics.Bitmap
+import android.graphics.Color
+import android.graphics.RectF
 import android.media.MediaPlayer
 import android.media.PlaybackParams
 import android.net.Uri
+import android.os.Handler
+import android.os.Looper
 import android.service.wallpaper.WallpaperService
 import android.util.Log
 import android.view.SurfaceHolder
+import androidx.core.content.ContextCompat
 import androidx.preference.PreferenceManager
 
 /**
@@ -45,10 +57,41 @@ class VideoWallpaperService : WallpaperService() {
         // correct surface without waiting for the next onSurfaceCreated.
         private var currentHolder: SurfaceHolder? = null
 
+        // While the keyguard is showing, the engine paints a still frame
+        // (the user's chosen lock image, or black) instead of video frames.
+        // This forces the lock/home split at render level: on ROMs whose
+        // lock screen mirrors the live wallpaper, the lock simply shows the
+        // still frame this engine paints, no matter what the wallpaper
+        // settings claim.
+        private var keyguardLocked = false
+        private var lockFrameBitmap: Bitmap? = null
+        private val mainHandler = Handler(Looper.getMainLooper())
+
+        private val keyguardManager
+            get() = getSystemService(Context.KEYGUARD_SERVICE) as? KeyguardManager
+
+        private val keyguardReceiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                refreshKeyguardState()
+            }
+        }
+
         override fun onCreate(surfaceHolder: SurfaceHolder) {
             super.onCreate(surfaceHolder)
             prefs = PreferenceManager.getDefaultSharedPreferences(this@VideoWallpaperService)
             prefs?.registerOnSharedPreferenceChangeListener(this)
+            keyguardLocked = keyguardManager?.isKeyguardLocked ?: false
+            ContextCompat.registerReceiver(
+                this@VideoWallpaperService,
+                keyguardReceiver,
+                IntentFilter().apply {
+                    addAction(Intent.ACTION_SCREEN_ON)
+                    addAction(Intent.ACTION_SCREEN_OFF)
+                    addAction(Intent.ACTION_USER_PRESENT)
+                },
+                ContextCompat.RECEIVER_NOT_EXPORTED
+            )
+            loadLockFrameAsync()
         }
 
         override fun onSurfaceCreated(holder: SurfaceHolder) {
@@ -60,7 +103,22 @@ class VideoWallpaperService : WallpaperService() {
 
         override fun onVisibilityChanged(isVisible: Boolean) {
             visible = isVisible
-            val player = mediaPlayer ?: return
+            syncPlayback()
+        }
+
+        private fun refreshKeyguardState() {
+            val locked = keyguardManager?.isKeyguardLocked ?: false
+            if (locked == keyguardLocked) return
+            keyguardLocked = locked
+            syncPlayback()
+        }
+
+        private fun syncPlayback() {
+            val player = mediaPlayer
+            if (player == null) {
+                if (keyguardLocked) drawLockFrameIfLocked()
+                return
+            }
             // Route through applySpeed rather than calling start()/pause()
             // directly here. Having two independent call sites (this one and
             // the one inside preparePlayer's onPreparedListener) both touching
@@ -72,6 +130,7 @@ class VideoWallpaperService : WallpaperService() {
             // applySpeed keeps state transitions to one guarded path.
             val speed = prefs?.getFloat(PREF_PLAYBACK_SPEED, DEFAULT_SPEED) ?: DEFAULT_SPEED
             applySpeed(player, speed)
+            if (keyguardLocked) drawLockFrameIfLocked()
         }
 
         override fun onSurfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
@@ -87,6 +146,7 @@ class VideoWallpaperService : WallpaperService() {
 
         override fun onDestroy() {
             super.onDestroy()
+            runCatching { this@VideoWallpaperService.unregisterReceiver(keyguardReceiver) }
             prefs?.unregisterOnSharedPreferenceChangeListener(this)
             releasePlayer()
         }
@@ -111,6 +171,72 @@ class VideoWallpaperService : WallpaperService() {
                     // Scaling mode and video URI both require a full re-prepare.
                     preparePlayer(holder)
                 }
+                PREF_LOCK_IMAGE_URI -> {
+                    loadLockFrameAsync()
+                }
+            }
+        }
+
+        private fun loadLockFrameAsync() {
+            val uriString = prefs?.getString(PREF_LOCK_IMAGE_URI, null)
+            if (uriString.isNullOrBlank()) {
+                lockFrameBitmap = null
+                drawLockFrameIfLocked()
+                return
+            }
+            val uri = try {
+                Uri.parse(uriString)
+            } catch (e: Exception) {
+                Log.w(TAG, "Stored lock image URI was malformed", e)
+                lockFrameBitmap = null
+                return
+            }
+            Thread {
+                val metrics = Resources.getSystem().displayMetrics
+                val bitmap = LockWallpaperManager.decodeScaled(
+                    this@VideoWallpaperService,
+                    uri,
+                    metrics.widthPixels.coerceAtLeast(1),
+                    metrics.heightPixels.coerceAtLeast(1)
+                )
+                mainHandler.post {
+                    lockFrameBitmap = bitmap
+                    drawLockFrameIfLocked()
+                }
+            }.start()
+        }
+
+        private fun drawLockFrameIfLocked() {
+            if (!keyguardLocked || !visible) return
+            val holder = currentHolder ?: return
+            val canvas = try {
+                holder.lockCanvas()
+            } catch (e: Exception) {
+                Log.w(TAG, "Could not lock canvas for lock frame", e)
+                null
+            } ?: return
+            try {
+                val bitmap = lockFrameBitmap
+                if (bitmap != null) {
+                    canvas.drawColor(Color.BLACK)
+                    val scale = maxOf(
+                        canvas.width.toFloat() / bitmap.width,
+                        canvas.height.toFloat() / bitmap.height
+                    )
+                    val width = bitmap.width * scale
+                    val height = bitmap.height * scale
+                    val left = (canvas.width - width) / 2f
+                    val top = (canvas.height - height) / 2f
+                    canvas.drawBitmap(bitmap, null, RectF(left, top, left + width, top + height), null)
+                } else {
+                    canvas.drawColor(Color.BLACK)
+                }
+            } finally {
+                try {
+                    holder.unlockCanvasAndPost(canvas)
+                } catch (e: Exception) {
+                    Log.w(TAG, "Could not post lock frame", e)
+                }
             }
         }
 
@@ -125,7 +251,6 @@ class VideoWallpaperService : WallpaperService() {
                 Log.e(TAG, "Stored video URI was malformed", e)
                 return
             }
-            val speed = prefs?.getFloat(PREF_PLAYBACK_SPEED, DEFAULT_SPEED) ?: DEFAULT_SPEED
             val scalingMode = prefs?.getInt(PREF_SCALING_MODE, DEFAULT_SCALING_MODE) ?: DEFAULT_SCALING_MODE
 
             // Confirm we still hold read permission before touching MediaPlayer.
@@ -156,7 +281,7 @@ class VideoWallpaperService : WallpaperService() {
                 player.setVideoScalingMode(scalingMode)
                 player.setOnPreparedListener {
                     consecutiveErrorRetries = 0
-                    applySpeed(it, speed)
+                    syncPlayback()
                 }
                 player.setOnErrorListener { _, what, extra ->
                     Log.e(TAG, "MediaPlayer error: what=$what extra=$extra")
@@ -212,7 +337,7 @@ class VideoWallpaperService : WallpaperService() {
          */
         private fun applySpeed(player: MediaPlayer, speed: Float) {
             try {
-                if (visible) {
+                if (visible && !keyguardLocked) {
                     if (!weBelieveStarted) {
                         player.start()
                         weBelieveStarted = true
@@ -223,7 +348,8 @@ class VideoWallpaperService : WallpaperService() {
                 } else {
                     // PlaybackParams can only be set on a running player on some
                     // OEM implementations, so briefly start, apply, then pause
-                    // if we're not actually meant to be visible yet.
+                    // if we're not actually meant to be playing yet (hidden or
+                    // behind the keyguard).
                     if (speed != 1.0f && !weBelieveStarted) {
                         player.start()
                         weBelieveStarted = true
@@ -259,6 +385,7 @@ class VideoWallpaperService : WallpaperService() {
         const val PREF_VIDEO_URI = "selected_video_uri"
         const val PREF_PLAYBACK_SPEED = "playback_speed"
         const val PREF_SCALING_MODE = "scaling_mode"
+        const val PREF_LOCK_IMAGE_URI = "lock_image_uri"
         const val DEFAULT_SPEED = 1.0f
         const val DEFAULT_SCALING_MODE = MediaPlayer.VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING
     }
