@@ -178,6 +178,77 @@
 
     </com.google.android.material.button.MaterialButtonToggleGroup>
 
+    <!-- Lock screen (static image) controls -->
+    <TextView
+        android:id="@+id/lockSectionLabel"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:text="@string/lock_section_label"
+        android:textColor="@color/text_primary"
+        android:textSize="12sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/cropToggleGroup" />
+
+    <Button
+        android:id="@+id/pickLockButton"
+        style="@style/Widget.Material3.Button.OutlinedButton"
+        android:layout_width="0dp"
+        android:layout_height="36dp"
+        android:layout_marginTop="4dp"
+        android:insetTop="0dp"
+        android:insetBottom="0dp"
+        android:text="@string/pick_lock_image"
+        android:textColor="@color/text_primary"
+        android:textSize="12sp"
+        app:cornerRadius="10dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/lockSectionLabel"
+        app:strokeColor="@color/accent" />
+
+    <LinearLayout
+        android:id="@+id/lockActionRow"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:orientation="horizontal"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/pickLockButton">
+
+        <Button
+            android:id="@+id/applyLockButton"
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_weight="1"
+            android:backgroundTint="@color/accent"
+            android:enabled="false"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:text="@string/apply_lock_wallpaper"
+            android:textColor="@color/text_primary"
+            android:textSize="12sp"
+            app:cornerRadius="10dp" />
+
+        <Button
+            android:id="@+id/clearLockButton"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_marginStart="6dp"
+            android:layout_weight="1"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:text="@string/clear_lock_wallpaper"
+            android:textColor="@color/text_primary"
+            android:textSize="12sp"
+            app:cornerRadius="10dp"
+            app:strokeColor="@color/accent" />
+
+    </LinearLayout>
+
     <Button
         android:id="@+id/setWallpaperButton"
         android:layout_width="0dp"
@@ -194,6 +265,6 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/cropToggleGroup" />
+        app:layout_constraintTop_toBottomOf="@id/lockActionRow" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
