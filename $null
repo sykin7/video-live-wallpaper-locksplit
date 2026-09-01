@@ -1,0 +1,12 @@
+warning: safe.directory ''D:/CodexProjects/动态壁纸/video-live-wallpaper-locksplit'' not absolute
+warning: safe.directory ''*'' not absolute
+warning: safe.directory ''D:/CodexProjects/video-live-wallpaper/video-live-wallpaper-locksplit'' not absolute
+warning: safe.directory ''*'' not absolute
+fatal: detected dubious ownership in repository at 'D:/CodexProjects/video-live-wallpaper/video-live-wallpaper-locksplit'
+'D:/CodexProjects/video-live-wallpaper/video-live-wallpaper-locksplit' is owned by:
+	WIN-20250620GKG/CodexSandboxOffline (S-1-5-21-2490691053-3224457259-2895098753-1002)
+but the current user is:
+	WIN-20250620GKG/Administrator (S-1-5-21-2490691053-3224457259-2895098753-500)
+To add an exception for this directory, call:
+
+	git config --global --add safe.directory D:/CodexProjects/video-live-wallpaper/video-live-wallpaper-locksplit
