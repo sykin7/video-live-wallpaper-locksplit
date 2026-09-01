@@ -2,6 +2,8 @@ package com.scg.videowallpaper
 
 import android.app.WallpaperManager
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.util.Log
 import java.io.IOException
@@ -32,7 +34,7 @@ object LockWallpaperManager {
                 error("Wallpaper is not supported on this device")
             }
 
-            val bitmap = ImageLoader.decodeScaled(
+            val bitmap = decodeScaled(
                 context,
                 uri,
                 targetWidth = manager.desiredMinimumWidth.coerceAtLeast(1),
@@ -47,7 +49,7 @@ object LockWallpaperManager {
                 Log.e(TAG, "Device does not support separate lock wallpaper", e)
                 error("This device does not support a separate lock screen wallpaper")
             } finally {
-                bitmap.recycle()
+                recycle(bitmap)
             }
         }
     }
@@ -67,5 +69,53 @@ object LockWallpaperManager {
                 }
             }
         }
+    }
+
+    private fun decodeScaled(
+        context: Context,
+        uri: Uri,
+        targetWidth: Int,
+        targetHeight: Int
+    ): Bitmap? {
+        return try {
+            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            context.contentResolver.openInputStream(uri)?.use { input ->
+                BitmapFactory.decodeStream(input, null, bounds)
+            }
+            if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
+
+            val options = BitmapFactory.Options().apply {
+                inSampleSize = calculateSampleSize(bounds, targetWidth, targetHeight)
+            }
+            context.contentResolver.openInputStream(uri)?.use { input ->
+                BitmapFactory.decodeStream(input, null, options)
+            }
+        } catch (e: IOException) {
+            Log.w(TAG, "Failed to decode bitmap from uri $uri", e)
+            null
+        } catch (e: SecurityException) {
+            Log.w(TAG, "No read permission for uri $uri", e)
+            null
+        }
+    }
+
+    private fun calculateSampleSize(
+        bounds: BitmapFactory.Options,
+        targetWidth: Int,
+        targetHeight: Int
+    ): Int {
+        var sample = 1
+        var width = bounds.outWidth
+        var height = bounds.outHeight
+        while (width / 2 >= targetWidth && height / 2 >= targetHeight) {
+            sample *= 2
+            width /= 2
+            height /= 2
+        }
+        return sample
+    }
+
+    private fun recycle(bitmap: Bitmap) {
+        if (!bitmap.isRecycled) bitmap.recycle()
     }
 }
