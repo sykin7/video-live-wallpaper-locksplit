@@ -3,7 +3,7 @@
     <string name="app_name">Video Live Wallpaper</string>
     <string name="wallpaper_description">Plays your chosen video as a live wallpaper</string>
     <string name="title">Video Live Wallpaper</string>
-    <string name="subtitle">Pick a video for your home screen, then choose an image just for your lock screen.</string>
+    <string name="subtitle">Pick a video and set it as your wallpaper. Live wallpapers apply to both home and lock screen.</string>
     <string name="pick_video">Choose Video</string>
     <string name="no_video_selected">No video selected</string>
     <string name="set_wallpaper">Set as Wallpaper</string>
@@ -14,16 +14,5 @@
     <string name="crop_label">Crop mode</string>
     <string name="crop_fill">Fill (crop edges)</string>
     <string name="crop_fit">Fit (show all, may letterbox)</string>
-    <string name="lock_section_label">Lock screen wallpaper (still image)</string>
-    <string name="pick_lock_image">Choose Lock Screen Image</string>
-    <string name="apply_lock_wallpaper">Apply to Lock Screen</string>
-    <string name="clear_lock_wallpaper">Clear Lock Screen</string>
-    <string name="lock_image_needed">Choose a lock screen image first</string>
-    <string name="lock_image_applied">Lock screen wallpaper applied</string>
-    <string name="lock_wallpaper_cleared">Lock screen wallpaper cleared</string>
-    <string name="lock_apply_failed">Couldn\'t set the lock screen wallpaper</string>
-    <string name="lock_error_load">Couldn\'t load the selected image</string>
-    <string name="lock_error_unsupported">This system doesn\'t support a separate lock screen wallpaper</string>
-    <string name="lock_error_ignored">The system ignored the lock screen change (custom ROMs often block this)</string>
 
 </resources>

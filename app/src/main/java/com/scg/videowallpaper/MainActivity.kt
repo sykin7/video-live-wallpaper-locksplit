@@ -24,16 +24,15 @@ import com.scg.videowallpaper.databinding.ActivityMainBinding
  * Lets the user pick a video, preview it, and set it as a live wallpaper
  * via the system's live-wallpaper picker. Exposes playback speed and
  * crop-mode controls, both applied live to the preview and persisted for
- * [VideoWallpaperService] to read. The home screen gets the video live
- * wallpaper; a separate still image can be applied to the lock screen
- * only via [LockWallpaperManager].
+ * [VideoWallpaperService] to read. Live wallpapers apply to both home and
+ * lock screen simultaneously — Android does not support independent
+ * live wallpapers per surface.
  */
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var prefs: SharedPreferences
     private var selectedVideoUri: Uri? = null
-    private var selectedLockImageUri: Uri? = null
 
     // Current preview MediaPlayer, captured so we can re-apply speed when the
     // slider moves without needing to re-prepare the whole VideoView.
@@ -54,11 +53,6 @@ class MainActivity : AppCompatActivity() {
             if (uri != null) onVideoPicked(uri)
         }
 
-    private val pickLockImageLauncher =
-        registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-            if (uri != null) onLockImagePicked(uri)
-        }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -71,7 +65,6 @@ class MainActivity : AppCompatActivity() {
 
         setupSpeedControl()
         setupCropControl()
-        setupLockControls()
         restoreSelection()
 
         binding.pickButton.setOnClickListener {
@@ -160,77 +153,6 @@ class MainActivity : AppCompatActivity() {
             // apparent once actually set as a wallpaper. We still persist it
             // here so the wallpaper service picks it up immediately.
         }
-    }
-
-    // --- Lock screen (static image) -------------------------------------
-
-    private fun setupLockControls() {
-        binding.pickLockButton.setOnClickListener {
-            pickLockImageLauncher.launch(arrayOf("image/*"))
-        }
-        binding.applyLockButton.setOnClickListener { applyLockWallpaper() }
-        binding.clearLockButton.setOnClickListener { clearLockWallpaper() }
-    }
-
-    private fun onLockImagePicked(uri: Uri) {
-        try {
-            contentResolver.takePersistableUriPermission(
-                uri,
-                Intent.FLAG_GRANT_READ_URI_PERMISSION
-            )
-        } catch (e: SecurityException) {
-            Toast.makeText(this, "Couldn't get permanent access to that file", Toast.LENGTH_LONG).show()
-            return
-        }
-
-        selectedLockImageUri = uri
-        prefs.edit().putString(VideoWallpaperService.PREF_LOCK_IMAGE_URI, uri.toString()).apply()
-        setLockControlsEnabled(true)
-    }
-
-    private fun applyLockWallpaper() {
-        val uri = selectedLockImageUri
-        if (uri == null) {
-            Toast.makeText(this, getString(R.string.lock_image_needed), Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        setLockControlsEnabled(false)
-        Thread {
-            val result = LockWallpaperManager.apply(applicationContext, uri)
-            runOnUiThread {
-                if (isFinishing || isDestroyed) return@runOnUiThread
-                setLockControlsEnabled(true)
-                val message = result.fold(
-                    onSuccess = { getString(R.string.lock_image_applied) },
-                    onFailure = { it.message ?: getString(R.string.lock_apply_failed) }
-                )
-                Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
-            }
-        }.start()
-    }
-
-    private fun clearLockWallpaper() {
-        setLockControlsEnabled(false)
-        Thread {
-            val result = LockWallpaperManager.clear(applicationContext)
-            runOnUiThread {
-                if (isFinishing || isDestroyed) return@runOnUiThread
-                selectedLockImageUri = null
-                setLockControlsEnabled(true)
-                val message = result.fold(
-                    onSuccess = { getString(R.string.lock_wallpaper_cleared) },
-                    onFailure = { getString(R.string.lock_apply_failed) }
-                )
-                Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
-            }
-        }.start()
-    }
-
-    private fun setLockControlsEnabled(enabled: Boolean) {
-        binding.pickLockButton.isEnabled = enabled
-        binding.applyLockButton.isEnabled = enabled && selectedLockImageUri != null
-        binding.clearLockButton.isEnabled = enabled
     }
 
     // --- Video selection -------------------------------------------------

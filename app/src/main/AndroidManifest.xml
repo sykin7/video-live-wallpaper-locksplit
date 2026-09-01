@@ -7,10 +7,6 @@
         android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
 
-    <!-- Needed to apply a separate static image to the lock screen while the
-         live wallpaper keeps running on the home screen. -->
-    <uses-permission android:name="android.permission.SET_WALLPAPER" />
-
     <queries>
         <intent>
             <action android:name="android.service.wallpaper.CHANGE_LIVE_WALLPAPER" />

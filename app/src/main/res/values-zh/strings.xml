@@ -2,7 +2,7 @@
 <resources>
     <!-- 标题与副标题 -->
     <string name="title">私人定制，禁止售卖</string>
-    <string name="subtitle">选择一段视频作为桌面动态壁纸，再选一张图片单独设置锁屏。</string>
+    <string name="subtitle">选择一段视频并将其设为你的壁纸。动态壁纸将同时应用于主屏幕和锁屏。</string>
     
     <!-- 提示未选择视频 -->
     <string name="no_video_selected">请先选择一个视频文件</string>
@@ -21,19 +21,6 @@
     
     <!-- 底部设为壁纸大按钮 -->
     <string name="set_wallpaper">设为动态壁纸</string>
-
-    <!-- 锁屏壁纸板块 -->
-    <string name="lock_section_label">锁屏壁纸（静态图片）</string>
-    <string name="pick_lock_image">选择锁屏图片</string>
-    <string name="apply_lock_wallpaper">应用到锁屏</string>
-    <string name="clear_lock_wallpaper">清除锁屏</string>
-    <string name="lock_image_needed">请先选择锁屏图片</string>
-    <string name="lock_image_applied">锁屏壁纸已应用</string>
-    <string name="lock_wallpaper_cleared">锁屏壁纸已清除</string>
-    <string name="lock_apply_failed">锁屏壁纸设置失败</string>
-    <string name="lock_error_load">无法读取所选图片</string>
-    <string name="lock_error_unsupported">此系统不支持单独设置锁屏壁纸</string>
-    <string name="lock_error_ignored">系统忽略了锁屏壁纸修改（定制系统常见限制）</string>
 
     <!-- 备用标签，顺手留着防报错 -->
     <string name="app_name">Scg</string>
