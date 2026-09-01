@@ -24,8 +24,4 @@
 
     <!-- 备用标签，顺手留着防报错 -->
     <string name="app_name">Scg</string>
-    <string name="video_preview">视频预览</string>
-    <string name="settings">设置</string>
-    <string name="error_loading_video">视频加载失败，请检查文件格式</string>
-    <string name="permission_required">应用需要读取存储权限来加载你的视频</string>
 </resources>
