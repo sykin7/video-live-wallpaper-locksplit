@@ -2,6 +2,7 @@ package com.scg.videowallpaper
 
 import android.app.WallpaperManager
 import android.content.Context
+import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
@@ -39,12 +40,19 @@ object LockWallpaperManager {
             // detects that instead of reporting a false success.
             val lockIdBefore = manager.getWallpaperId(WallpaperManager.FLAG_LOCK)
 
+            // desiredMinimumWidth/Height report 0 on many devices; using
+            // them alone collapsed the decode target to 1x1 and produced a
+            // near-invisible lock wallpaper. Always prefer the real screen
+            // size as the decode target.
+            val metrics = Resources.getSystem().displayMetrics
             val bitmap = decodeScaled(
                 context,
                 uri,
-                targetWidth = manager.desiredMinimumWidth.coerceAtLeast(1),
-                targetHeight = manager.desiredMinimumHeight.coerceAtLeast(1)
+                targetWidth = maxOf(manager.desiredMinimumWidth, metrics.widthPixels).coerceAtLeast(1),
+                targetHeight = maxOf(manager.desiredMinimumHeight, metrics.heightPixels).coerceAtLeast(1)
             ) ?: error(context.getString(R.string.lock_error_load))
+
+            Log.i(TAG, "Lock bitmap decoded at ${bitmap.width}x${bitmap.height}")
 
             // FLAG_LOCK targets the lock screen only; FLAG_SYSTEM is omitted so
             // the video live wallpaper keeps rendering on the home screen.
