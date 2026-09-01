@@ -31,15 +31,20 @@ object LockWallpaperManager {
         return runCatching {
             val manager = WallpaperManager.getInstance(context)
             if (!manager.isWallpaperSupported) {
-                error("Wallpaper is not supported on this device")
+                error(context.getString(R.string.lock_error_unsupported))
             }
+
+            // Some OEM ROMs accept the FLAG_LOCK call but silently ignore
+            // it; comparing the lock wallpaper id before and after the call
+            // detects that instead of reporting a false success.
+            val lockIdBefore = manager.getWallpaperId(WallpaperManager.FLAG_LOCK)
 
             val bitmap = decodeScaled(
                 context,
                 uri,
                 targetWidth = manager.desiredMinimumWidth.coerceAtLeast(1),
                 targetHeight = manager.desiredMinimumHeight.coerceAtLeast(1)
-            ) ?: error("Failed to load lock screen image")
+            ) ?: error(context.getString(R.string.lock_error_load))
 
             // FLAG_LOCK targets the lock screen only; FLAG_SYSTEM is omitted so
             // the video live wallpaper keeps rendering on the home screen.
@@ -47,9 +52,15 @@ object LockWallpaperManager {
                 manager.setBitmap(bitmap, null, true, WallpaperManager.FLAG_LOCK)
             } catch (e: IOException) {
                 Log.e(TAG, "Device does not support separate lock wallpaper", e)
-                error("This device does not support a separate lock screen wallpaper")
+                error(context.getString(R.string.lock_error_unsupported))
             } finally {
                 recycle(bitmap)
+            }
+
+            val lockIdAfter = manager.getWallpaperId(WallpaperManager.FLAG_LOCK)
+            if (lockIdAfter == lockIdBefore) {
+                Log.w(TAG, "System ignored FLAG_LOCK change, id stayed $lockIdBefore")
+                error(context.getString(R.string.lock_error_ignored))
             }
         }
     }

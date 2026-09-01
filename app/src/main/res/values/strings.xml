@@ -22,5 +22,8 @@
     <string name="lock_image_applied">Lock screen wallpaper applied</string>
     <string name="lock_wallpaper_cleared">Lock screen wallpaper cleared</string>
     <string name="lock_apply_failed">Couldn\'t set the lock screen wallpaper</string>
+    <string name="lock_error_load">Couldn\'t load the selected image</string>
+    <string name="lock_error_unsupported">This system doesn\'t support a separate lock screen wallpaper</string>
+    <string name="lock_error_ignored">The system ignored the lock screen change (custom ROMs often block this)</string>
 
 </resources>

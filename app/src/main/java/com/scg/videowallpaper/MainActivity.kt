@@ -202,7 +202,7 @@ class MainActivity : AppCompatActivity() {
                 setLockControlsEnabled(true)
                 val message = result.fold(
                     onSuccess = { getString(R.string.lock_image_applied) },
-                    onFailure = { getString(R.string.lock_apply_failed) }
+                    onFailure = { it.message ?: getString(R.string.lock_apply_failed) }
                 )
                 Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
             }
